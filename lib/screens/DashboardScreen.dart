@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:organeasy_app/model/members.dart';
+import 'package:organeasy_app/utils/members_helpers.dart';
 import 'RoomsScreen.dart';
 import 'package:organeasy_app/screens/TasksScreen.dart';
-import 'MembersScreen.dart';  
+import 'MembersScreen.dart';
 // Importando o arquivo com os dados das salas
-
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -19,8 +20,6 @@ class _DashboardState extends State<Dashboard> {
   }
 }
 
-
-
 // Dashboard screen
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -32,15 +31,21 @@ class DashboardScreen extends StatelessWidget {
       child: ListView(
         children: [
           _buildCard(
-            title: "tarefas do dia", 
+            title: "tarefas do dia",
             child: const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_circle_outline, size: 50, color: Colors.grey),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 50,
+                    color: Colors.grey,
+                  ),
                   SizedBox(height: 8),
-                  Text("Não há tarefas para hoje",
-                      style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  Text(
+                    "Não há tarefas para hoje",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
                 ],
               ),
             ),
@@ -53,7 +58,7 @@ class DashboardScreen extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(child: _memberActivityCard()),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -68,8 +73,10 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             child,
           ],
@@ -101,21 +108,48 @@ class DashboardScreen extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.calendar_today, color: Colors.blue),
       title: Text(day, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text("$tasks tarefas",
-          style: const TextStyle(color: Colors.grey)),  
+      subtitle: Text(
+        "$tasks tarefas",
+        style: const TextStyle(color: Colors.grey),
+      ),
     );
   }
 
   Widget _memberActivityCard() {
-    return _buildCard(
-      title: "Membros ativos",
-      child: Column(
-        children: [
-          _memberProgress("Liza", 0, Colors.purple),
-          _memberProgress("Bruno", 0, Colors.green),
-          _memberProgress("Mary", 0, Colors.teal),
-        ],
-      ),
+    return FutureBuilder<List<Member>>(
+      future: MembersHelper().getAllMembers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildCard(
+            title: "Membros ativos",
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          return _buildCard(
+            title: "Membros ativos",
+            child: const Center(child: Text('Erro ao carregar membros')),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildCard(
+            title: "Membros ativos",
+            child: const Center(child: Text('Nenhum membro encontrado')),
+          );
+        } else {
+          final members = snapshot.data!;
+          return _buildCard(
+            title: "Membros ativos",
+            child: Column(
+              children: members.map((member) {
+                return _memberProgress(
+                  member.name,
+                  member.completion, // progresso real vindo do banco
+                  member.color, // já é Color!
+                );
+              }).toList(),
+            ),
+          );
+        }
+      },
     );
   }
 
@@ -124,22 +158,43 @@ class DashboardScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
+          // Avatar com a inicial e cor
           CircleAvatar(
             backgroundColor: color,
-            child: Text(name[0], style: const TextStyle(color: Colors.white)),
+            child: Text(
+              name[0].toUpperCase(),
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: LinearProgressIndicator(value: progress, minHeight: 8),
+
+          // Nome do membro
+          Text(
+            name,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
+
+          const SizedBox(width: 12),
+
+          // Barra de progresso
+          Expanded(
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              color: color,
+              backgroundColor: color.withOpacity(0.3),
+            ),
+          ),
+
           const SizedBox(width: 8),
+
+          // Porcentagem
           Text("${(progress * 100).toInt()}%"),
         ],
       ),
     );
   }
 }
-
 
 class RoomPage extends StatelessWidget {
   const RoomPage({super.key});
@@ -150,7 +205,6 @@ class RoomPage extends StatelessWidget {
   }
 }
 
-
 class TaskPage extends StatelessWidget {
   const TaskPage({super.key});
 
@@ -160,7 +214,6 @@ class TaskPage extends StatelessWidget {
   }
 }
 
-
 @override
 Widget build(BuildContext context) {
   return MembersScreen();
@@ -168,5 +221,5 @@ Widget build(BuildContext context) {
 
 //@override
 //Widget build(BuildContext context) {
- // return settings();
+// return settings();
 //}
