@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'RoomsScreen.dart';
 import 'package:organeasy_app/screens/TasksScreen.dart';
 import 'MembersScreen.dart';  
-import 'package:flutter/material.dart';
-import 'package:organeasy_app/screens/RoomsScreen.dart'; // Importando o arquivo com os dados das salas
+// Importando o arquivo com os dados das salas
 
 
 class Dashboard extends StatefulWidget {

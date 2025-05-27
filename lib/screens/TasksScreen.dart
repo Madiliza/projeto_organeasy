@@ -25,9 +25,11 @@ class _TasksScreenState extends State<TasksScreen> {
   @override
   void initState() {
     super.initState();
-    _loadTasks();
-    _loadMembers();
-    _loadRooms();
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    await Future.wait([_loadTasks(), _loadMembers(), _loadRooms()]);
   }
 
   Future<void> _loadTasks() async {
@@ -51,157 +53,173 @@ class _TasksScreenState extends State<TasksScreen> {
     });
   }
 
-void _addOrEditTask({Task? task}) async {
-  final nameController = TextEditingController(text: task?.name);
-  String? selectedStatus = task?.status ?? 'Não realizada';
-  String? selectedRoom = task?.room;
-  Color? selectedColor = task?.color ?? Colors.grey;
+  void _addOrEditTask({Task? task}) async {
+    final nameController = TextEditingController(text: task?.name);
+    String? selectedStatus = task?.status ?? 'Não realizada';
+    String? selectedRoom = task?.room;
+    Color? selectedColor = task?.color ?? Colors.grey;
 
-  /// 🔥 Carrega os cômodos atualizado antes do showDialog
-  final roomsList = await roomsHelper.getAllRooms();
-  final roomsNames = roomsList.map((e) => e.name).toList();
+    // ⚠️ Aguarda carregar os cômodos corretamente
+    final roomsList = await roomsHelper.getAllRooms();
+    final roomsNames = roomsList.map((e) => e.name).toList();
 
-  /// 🔒 Verifica se o cômodo da tarefa ainda existe, se não existir, seta null
-  if (selectedRoom != null && !roomsNames.contains(selectedRoom)) {
-    selectedRoom = null;
-  }
+    // ✅ Se o cômodo salvo não estiver na lista, define como null
+    if (selectedRoom != null && !roomsNames.contains(selectedRoom)) {
+      selectedRoom = null;
+    }
 
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(task == null ? 'Adicionar Tarefa' : 'Editar Tarefa'),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        content: StatefulBuilder(
-          builder: (context, setState) {
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Nome'),
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: selectedRoom,
-                    decoration: const InputDecoration(labelText: 'Cômodo'),
-                    items: roomsNames
-                        .map(
-                          (room) => DropdownMenuItem(
-                            value: room,
-                            child: Text(room),
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(task == null ? 'Adicionar Tarefa' : 'Editar Tarefa'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            content: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(labelText: 'Nome'),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: roomsNames.contains(selectedRoom)
+                            ? selectedRoom
+                            : null,
+                        decoration: const InputDecoration(labelText: 'Cômodo'),
+                        items: roomsNames
+                            .map(
+                              (room) => DropdownMenuItem(
+                                value: room,
+                                child: Text(room),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedRoom = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value:
+                            [
+                              'Concluída',
+                              'Em andamento',
+                              'Não realizada',
+                            ].contains(selectedStatus)
+                            ? selectedStatus
+                            : 'Não realizada',
+                        decoration: const InputDecoration(labelText: 'Status'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'Concluída',
+                            child: Text('Concluída'),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedRoom = value;
-                      });
-                    },
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: selectedStatus,
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    items: const [
-                      DropdownMenuItem(
-                          value: 'Concluída', child: Text('Concluída')),
-                      DropdownMenuItem(
-                          value: 'Em andamento', child: Text('Em andamento')),
-                      DropdownMenuItem(
-                          value: 'Não realizada',
-                          child: Text('Não realizada')),
+                          DropdownMenuItem(
+                            value: 'Em andamento',
+                            child: Text('Em andamento'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Não realizada',
+                            child: Text('Não realizada'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            selectedStatus = value;
+                          });
+                        },
+                      ),
                     ],
-                    onChanged: (value) {
-                      setState(() {
-                        selectedStatus = value;
-                      });
-                    },
                   ),
-                ],
+                );
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
               ),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              final status = selectedStatus ?? 'Não realizada';
+              TextButton(
+                onPressed: () async {
+                  final name = nameController.text.trim();
+                  final status = selectedStatus ?? 'Não realizada';
 
-              if (name.isEmpty || selectedRoom == null) return;
+                  if (name.isEmpty || selectedRoom == null) return;
 
-              if (task == null) {
-                final newTask = Task(
-                  name: name,
-                  room: selectedRoom!,
-                  member: '',
-                  status: status,
-                  color: selectedColor,
-                );
-                await dbHelper.insertTask(newTask);
-              } else {
-                final updatedTask = Task(
-                  id: task.id,
-                  name: name,
-                  room: selectedRoom!,
-                  member: task.member,
-                  status: status,
-                  color: selectedColor,
-                );
-                await dbHelper.updateTask(updatedTask);
-              }
+                  if (task == null) {
+                    final newTask = Task(
+                      name: name,
+                      room: selectedRoom!,
+                      member: '',
+                      status: status,
+                      color: selectedColor,
+                    );
+                    await dbHelper.insertTask(newTask);
+                  } else {
+                    final updatedTask = Task(
+                      id: task.id,
+                      name: name,
+                      room: selectedRoom!,
+                      member: task.member,
+                      status: status,
+                      color: selectedColor,
+                    );
+                    await dbHelper.updateTask(updatedTask);
+                  }
 
-              Navigator.of(context).pop();
-              _loadTasks();
-            },
-            child: Text(task == null ? 'Adicionar' : 'Salvar'),
-          ),
-        ],
+                  Navigator.of(context).pop();
+                  _loadTasks();
+                },
+                child: Text(task == null ? 'Adicionar' : 'Salvar'),
+              ),
+            ],
+          );
+        },
       );
-    },
-  );
-}
-
-
-//Defina um método para obter a cor e o texto do status da tarefa
-Color _getStatusColor(String status) {
-  switch (status) {
-    case 'Concluída':
-      return Colors.green;
-    case 'Em andamento':
-      return Colors.yellow;
-    case 'Não realizada':
-      return Colors.red;
-    default:
-      return Colors.grey; // Cor padrão se o status não for reconhecido
+    }
   }
-}
 
-String _getStatusText(String status) {
-  switch (status) {
-    case 'Concluída':
-      return 'Concluída';
-    case 'Em andamento':
-      return 'Em andamento';
-    case 'Não realizada':
-      return 'Não realizada';
-    default:
-      return 'Status desconhecido'; // Texto padrão se o status não for reconhecido
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Concluída':
+        return Colors.green;
+      case 'Em andamento':
+        return Colors.yellow;
+      case 'Não realizada':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
-}
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'Concluída':
+        return 'Concluída';
+      case 'Em andamento':
+        return 'Em andamento';
+      case 'Não realizada':
+        return 'Não realizada';
+      default:
+        return 'Status desconhecido';
+    }
+  }
 
   void _assignMemberToTask(Task task) async {
     final membersList = await membersHelper.getAllMembers();
     final membersNames = membersList.map((e) => e.name).toList();
-    String? selectedMember = task.member.isNotEmpty ? task.member : null;
+    String? selectedMember = membersNames.contains(task.member)
+        ? task.member
+        : null;
 
     showDialog(
       context: context,
@@ -209,9 +227,7 @@ String _getStatusText(String status) {
         return AlertDialog(
           title: const Text('Atribuir Membro'),
           content: DropdownButtonFormField<String>(
-            value: membersNames.contains(selectedMember)
-                ? selectedMember
-                : null,
+            value: selectedMember,
             decoration: const InputDecoration(labelText: 'Selecione um membro'),
             items: membersNames
                 .map(
@@ -225,15 +241,12 @@ String _getStatusText(String status) {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancelar'),
             ),
             TextButton(
               onPressed: () async {
                 if (selectedMember != null) {
-                  // 🔥 Buscar o membro e pegar sua cor
                   final member = membersList.firstWhere(
                     (m) => m.name == selectedMember,
                     orElse: () =>
@@ -246,7 +259,7 @@ String _getStatusText(String status) {
                     room: task.room,
                     member: selectedMember!,
                     status: task.status,
-                    color: member.color, // 🔥 Atualiza a cor aqui
+                    color: member.color,
                   );
 
                   await dbHelper.updateTask(updatedTask);
@@ -274,9 +287,7 @@ String _getStatusText(String status) {
           content: const Text('Quer mesmo deletar esta tarefa?'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancelar'),
             ),
             TextButton(
@@ -340,16 +351,14 @@ String _getStatusText(String status) {
                               children: [
                                 CircleAvatar(
                                   backgroundColor: _getStatusColor(task.status),
-                                  radius: 8, // Tamanho da bolinha
+                                  radius: 6,
                                 ),
-                                const SizedBox(
-                                  width: 8,
-                                ), // Espaço entre a bolinha e o texto
+                                const SizedBox(width: 8),
                                 Text(_getStatusText(task.status)),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Text(
-                                    'Cômodo: ${task.room} | Membro: ${task.member}',
+                                    'Cômodo: ${task.room} | Membro: ${task.member.isNotEmpty ? task.member : 'Não atribuído'}',
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
