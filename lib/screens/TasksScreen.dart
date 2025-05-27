@@ -64,14 +64,7 @@ class _TasksScreenState extends State<TasksScreen> {
         return AlertDialog(
           title: const Text('Alterar Status'),
           content: DropdownButtonFormField<String>(
-            value:
-                [
-                  'Não realizada',
-                  'Em andamento',
-                  'Concluída',
-                ].contains(selectedStatus)
-                ? selectedStatus
-                : null,
+            value: statuses.contains(selectedStatus) ? selectedStatus : null,
             decoration: const InputDecoration(labelText: 'Selecione o status'),
             items: statuses
                 .map(
@@ -97,7 +90,8 @@ class _TasksScreenState extends State<TasksScreen> {
                     room: task.room,
                     member: task.member,
                     status: selectedStatus!,
-                    color: task.color, date: task.date,
+                    color: task.color,
+                    date: task.date,
                   );
 
                   await dbHelper.updateTask(updatedTask);
@@ -119,11 +113,9 @@ class _TasksScreenState extends State<TasksScreen> {
     String? selectedRoom = task?.room;
     Color? selectedColor = task?.color ?? Colors.grey;
 
-    // ⚠️ Aguarda carregar os cômodos corretamente
     final roomsList = await roomsHelper.getAllRooms();
     final roomsNames = roomsList.map((e) => e.name).toList();
 
-    // ✅ Se o cômodo salvo não estiver na lista, define como null
     if (selectedRoom != null && !roomsNames.contains(selectedRoom)) {
       selectedRoom = null;
     }
@@ -169,15 +161,10 @@ class _TasksScreenState extends State<TasksScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value:
-                            [
-                              'Concluída',
-                              'Em andamento',
-                              'Não realizada',
-                            ].contains(selectedStatus)
+                        value: ['Concluída', 'Em andamento', 'Não realizada']
+                                .contains(selectedStatus)
                             ? selectedStatus
                             : null,
-
                         decoration: const InputDecoration(labelText: 'Status'),
                         items: const [
                           DropdownMenuItem(
@@ -222,7 +209,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       room: selectedRoom!,
                       member: '',
                       status: status,
-                      color: selectedColor, 
+                      color: selectedColor,
                       date: DateTime.now(),
                     );
                     await dbHelper.insertTask(newTask);
@@ -233,7 +220,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       room: selectedRoom!,
                       member: task.member,
                       status: status,
-                      color: selectedColor, 
+                      color: selectedColor,
                       date: task.date,
                     );
                     await dbHelper.updateTask(updatedTask);
@@ -322,7 +309,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     room: task.room,
                     member: selectedMember!,
                     status: task.status,
-                    color: member.color, 
+                    color: member.color,
                     date: task.date,
                   );
 
@@ -368,8 +355,25 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
+  double _getMemberCompletedPercentage(String memberName) {
+    final memberTasks =
+        tasks.where((task) => task.member == memberName).toList();
+    if (memberTasks.isEmpty) return 0;
+    final completedTasks =
+        memberTasks.where((task) => task.status == 'Concluída').length;
+    return completedTasks / memberTasks.length;
+  }
+
+  double _getOverallCompletedPercentage() {
+    if (tasks.isEmpty) return 0;
+    final completed = tasks.where((t) => t.status == 'Concluída').length;
+    return completed / tasks.length;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final overallProgress = _getOverallCompletedPercentage();
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -390,6 +394,61 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
+            // Progresso geral
+            const Text(
+              'Progresso Geral:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: overallProgress,
+              backgroundColor: Colors.grey[300],
+              color: Colors.blue,
+              minHeight: 8,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${(overallProgress * 100).toStringAsFixed(0)}% concluídas no total',
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Progresso dos membros
+            const Text(
+              'Progresso dos membros:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 12),
+            ...members.map((member) {
+              final progress = _getMemberCompletedPercentage(member.name);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    member.name,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Colors.grey[300],
+                    color: Colors.green,
+                    minHeight: 8,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(progress * 100).toStringAsFixed(0)}% concluídas',
+                    style: const TextStyle(
+                        fontSize: 12, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              );
+            }).toList(),
+
             Expanded(
               child: tasks.isEmpty
                   ? const Center(child: Text('Nenhuma tarefa cadastrada.'))
@@ -439,7 +498,6 @@ class _TasksScreenState extends State<TasksScreen> {
                                 ],
                               ),
                             ),
-
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [

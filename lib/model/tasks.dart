@@ -34,8 +34,8 @@ class Task {
   factory Task.fromMap(Map<String, dynamic> map) {
     return Task(
       id: map['id'] as int?,
-      name: (map['name'] ?? 'Sem nome') as String,
-      room: (map['room'] ?? 'Sem cômodo') as String,
+      name: (map['name'] ?? '') as String,
+      room: (map['room'] ?? '') as String,
       member: (map['member'] ?? '') as String,
       status: (map['status'] ?? 'Não realizada') as String,
       color: Color(map['color'] as int),

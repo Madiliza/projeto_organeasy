@@ -1,5 +1,5 @@
-import 'package:organeasy_app/utils/database_helpers.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:organeasy_app/utils/database_helpers.dart';
 import '../model/tasks.dart';
 
 class TasksHelper {
@@ -11,16 +11,16 @@ class TasksHelper {
     return await db.insert(
       table,
       task.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace, // ⚠️ Garante atualização se ID já existir
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  // 🔸 Buscar todas as tarefas
+  // 🔸 Buscar todas as tarefas ordenadas por data
   Future<List<Task>> getTasks() async {
     final db = await DatabaseHelper.instance.database;
     final result = await db.query(
       table,
-      orderBy: 'date DESC', // 🔥 Ordena pela data mais recente
+      orderBy: 'date DESC',
     );
 
     return result.map((map) => Task.fromMap(map)).toList();
@@ -47,20 +47,20 @@ class TasksHelper {
     );
   }
 
-  //getalltasks
+  // 🔸 Buscar todas as tarefas (sem ordenação)
   Future<List<Task>> getAllTasks() async {
     final db = await DatabaseHelper.instance.database;
     final result = await db.query(table);
     return result.map((map) => Task.fromMap(map)).toList();
   }
 
-  // 🔸 Deletar todas as tarefas (opcional)
+  // 🔸 Deletar todas as tarefas
   Future<int> deleteAllTasks() async {
     final db = await DatabaseHelper.instance.database;
     return await db.delete(table);
   }
 
-  // 🔸 Contar quantas tarefas existem (opcional)
+  // 🔸 Contagem total de tarefas
   Future<int> getTasksCount() async {
     final db = await DatabaseHelper.instance.database;
     final result = await db.rawQuery('SELECT COUNT(*) FROM $table');

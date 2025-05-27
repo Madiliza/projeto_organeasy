@@ -1,21 +1,28 @@
 import 'package:organeasy_app/utils/database_helpers.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../model/members.dart';
-
 
 class MembersHelper {
   static const table = 'members';
 
+  // 🔸 Inserir Member
   Future<int> insertMember(Member member) async {
     final db = await DatabaseHelper.instance.database;
-    return await db.insert(table, member.toMap());
+    return await db.insert(
+      table,
+      member.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
+  // 🔸 Buscar todos os Members
   Future<List<Member>> getMembers() async {
     final db = await DatabaseHelper.instance.database;
     final result = await db.query(table);
     return result.map((e) => Member.fromMap(e)).toList();
   }
 
+  // 🔸 Atualizar Member
   Future<int> updateMember(Member member) async {
     final db = await DatabaseHelper.instance.database;
     return await db.update(
@@ -26,6 +33,7 @@ class MembersHelper {
     );
   }
 
+  // 🔸 Deletar Member por ID
   Future<int> deleteMember(int id) async {
     final db = await DatabaseHelper.instance.database;
     return await db.delete(
@@ -34,8 +42,8 @@ class MembersHelper {
       whereArgs: [id],
     );
   }
-  
-  //metodo para selecionar cor pré selecionada
+
+  // 🔸 Buscar cor do Member pelo ID
   Future<int> getSelectedColor(int id) async {
     final db = await DatabaseHelper.instance.database;
     final result = await db.query(
@@ -47,19 +55,17 @@ class MembersHelper {
     if (result.isNotEmpty) {
       return result.first['color'] as int;
     }
-    return 0; // Retorna 0 se não encontrar a cor
+    return 0; // Se não encontrar, retorna 0 (pode ser uma cor default)
   }
 
+  // 🔸 Deletar todos os Members
   Future<void> clearMembers() async {
     final db = await DatabaseHelper.instance.database;
     await db.delete(table);
   }
 
-//criar classe para buscar todos os membros e retornar uma lista de membros
+  // 🔸 Buscar todos os Members (redundante, mas deixa claro)
   Future<List<Member>> getAllMembers() async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db.query(table);
-    return result.map((e) => Member.fromMap(e)).toList();
+    return await getMembers();
   }
-
 }

@@ -26,126 +26,120 @@ class _MembersScreenState extends State<MembersScreen> {
     });
   }
 
-  //metodo para selecionar cor pré selecionada
   Future<int> _getSelectedColor(int id) async {
     return await dbHelper.getSelectedColor(id);
   }
 
   void _addOrEditMember({Member? member}) {
-  final nameController = TextEditingController(text: member?.name);
-  final initialController = TextEditingController(text: member?.initial);
+    final nameController = TextEditingController(text: member?.name);
+    final initialController = TextEditingController(text: member?.initial);
+    Color selectedColor = member?.color ?? Colors.blue;
 
-  // Cor selecionada - inicia com a cor do membro ou uma padrão
-  Color selectedColor = member?.color ?? Colors.blue;
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(member == null ? 'Adicionar membro' : 'Editar membro'),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Nome'),
-              ),
-              TextField(
-                controller: initialController,
-                decoration: const InputDecoration(labelText: 'Inicial'),
-                maxLength: 1,
-              ),
-              const SizedBox(height: 16),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Selecione uma cor:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(member == null ? 'Adicionar membro' : 'Editar membro'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Nome'),
                 ),
-              ),
-              const SizedBox(height: 8),
+                TextField(
+                  controller: initialController,
+                  decoration: const InputDecoration(labelText: 'Inicial'),
+                  maxLength: 1,
+                ),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Selecione uma cor:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    Colors.red,
+                    Colors.blue,
+                    Colors.green,
+                    Colors.orange,
+                    Colors.purple,
+                    Colors.teal,
+                    Colors.pink,
+                    Colors.brown,
+                    Colors.cyan,
+                    Colors.amber,
+                  ].map((color) {
+                    return GestureDetector(
+                      onTap: () {
+                        selectedColor = color;
+                        (context as Element).markNeedsBuild();
+                      },
+                      child: CircleAvatar(
+                        backgroundColor: color,
+                        radius: 18,
+                        child: selectedColor == color
+                            ? const Icon(Icons.check, color: Colors.white)
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                final initial = initialController.text.trim();
 
-              /// Seletor de cor
-              Wrap(
-                spacing: 8,
-                children: [
-                  Colors.red,
-                  Colors.blue,
-                  Colors.green,
-                  Colors.orange,
-                  Colors.purple,
-                  Colors.teal,
-                  Colors.pink,
-                  Colors.brown,
-                  Colors.cyan,
-                  Colors.amber,
-                ].map((color) {
-                  return GestureDetector(
-                    onTap: () {
-                      selectedColor = color;
-                      (context as Element).markNeedsBuild(); // Atualiza o widget manualmente
-                    },
-                    child: CircleAvatar(
-                      backgroundColor: color,
-                      radius: 18,
-                      child: selectedColor == color
-                          ? const Icon(Icons.check, color: Colors.white)
-                          : null,
-                    ),
+                if (name.isEmpty || initial.isEmpty) return;
+
+                if (member == null) {
+                  final newMember = Member(
+                    name: name,
+                    initial: initial,
+                    color: selectedColor,
                   );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              final initial = initialController.text.trim();
+                  await dbHelper.insertMember(newMember);
+                } else {
+                  final updatedMember = Member(
+                    id: member.id,
+                    name: name,
+                    initial: initial,
+                    color: selectedColor,
+                    assignedTasks: member.assignedTasks,
+                    completion: member.completion,
+                  );
+                  await dbHelper.updateMember(updatedMember);
+                }
 
-              if (name.isEmpty || initial.isEmpty) return;
-
-              if (member == null) {
-                final newMember = Member(
-                  name: name,
-                  initial: initial,
-                  color: selectedColor,
-                );
-                await dbHelper.insertMember(newMember);
-              } else {
-                final updatedMember = Member(
-                  id: member.id,
-                  name: name,
-                  initial: initial,
-                  color: selectedColor,
-                  assignedTasks: member.assignedTasks,
-                  completion: member.completion,
-                );
-                await dbHelper.updateMember(updatedMember);
-              }
-
-              Navigator.of(context).pop();
-              _loadMembers();
-            },
-            child: Text(member == null ? 'Adicionar' : 'Salvar'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
+                Navigator.of(context).pop();
+                _loadMembers();
+              },
+              child: Text(member == null ? 'Adicionar' : 'Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   void _deleteMember(int id) {
     showDialog(
@@ -186,8 +180,10 @@ class _MembersScreenState extends State<MembersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Gerenciar Membros',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const Text(
+              'Gerenciar Membros',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerRight,
@@ -222,21 +218,33 @@ class _MembersScreenState extends State<MembersScreen> {
                             children: [
                               CircleAvatar(
                                 backgroundColor: member.color,
-                                child: Text(member.initial,
-                                    style: const TextStyle(color: Colors.white)),
+                                child: Text(
+                                  member.initial,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(member.name,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16)),
                                   Text(
-                                      '${member.assignedTasks} tarefas atribuídas',
-                                      style: const TextStyle(
-                                          color: Colors.grey, fontSize: 12)),
+                                    member.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                  Text(
+                                    '${member.assignedTasks} tarefas atribuídas',
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontSize: 12),
+                                  ),
+                                  Text(
+                                    'Concluído: ${(member.completion * 100).toInt()}%',
+                                    style: const TextStyle(
+                                        color: Colors.green,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500),
+                                  ),
                                 ],
                               ),
                               const Spacer(),
@@ -259,8 +267,10 @@ class _MembersScreenState extends State<MembersScreen> {
                             color: Colors.blue,
                           ),
                           const SizedBox(height: 4),
-                          Text('${(member.completion * 100).toInt()}%',
-                              style: const TextStyle(fontSize: 12)),
+                          Text(
+                            '${(member.completion * 100).toInt()}%',
+                            style: const TextStyle(fontSize: 12),
+                          ),
                         ],
                       ),
                     ),

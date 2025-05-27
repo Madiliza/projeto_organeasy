@@ -1,4 +1,3 @@
-
 class Room {
   final int? id;
   final String name;
@@ -14,10 +13,8 @@ class Room {
 
   factory Room.fromMap(Map<String, dynamic> map) {
     return Room(
-      id: map['id'],
-      name: map['name'],
+      id: map['id'] as int?,
+      name: map['name'] as String,
     );
   }
-
-
 }
