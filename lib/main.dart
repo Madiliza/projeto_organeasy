@@ -1,40 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+// Importação das telas
 import 'screens/DashboardScreen.dart';
 import 'screens/RoomsScreen.dart';
 import 'screens/MembersScreen.dart';
 
 void main() {
-  
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
-  WidgetsFlutterBinding.ensureInitialized(); // Necessário para path_provider
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const OrganeasyApp());
 }
 
-
-
-class OrganeasyApp extends StatelessWidget {
+class OrganeasyApp extends StatefulWidget {
   const OrganeasyApp({super.key});
+
+  @override
+  State<OrganeasyApp> createState() => _OrganeasyAppState();
+}
+
+class _OrganeasyAppState extends State<OrganeasyApp> {
+  bool isDarkMode = false;
+
+  void toggleTheme(bool isDark) {
+    setState(() {
+      isDarkMode = isDark;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Organeasy',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: isDarkMode ? ThemeData.dark() : ThemeData.light(),
+      home: Dashboard(
+        isDarkMode: isDarkMode,
+        onThemeChanged: toggleTheme,
       ),
-      home: const Dashboard(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-
-
 class Dashboard extends StatefulWidget {
-  const Dashboard({super.key});
+  final bool isDarkMode;
+  final Function(bool) onThemeChanged;
+
+  const Dashboard({
+    super.key,
+    required this.isDarkMode,
+    required this.onThemeChanged,
+  });
 
   @override
   State<Dashboard> createState() => _DashboardState();
@@ -42,15 +59,6 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    DashboardScreen(),
-    RoomsScreen(),
-    TaskPage(),
-    MembersScreen(),
-    // A tela de configurações pode ser adicionada aqui
-    Center(child: Text('Configurações')), // Placeholder
-  ];
 
   static const List<String> _titles = [
     'Dashboard',
@@ -65,6 +73,17 @@ class _DashboardState extends State<Dashboard> {
       _selectedIndex = index;
     });
   }
+
+  List<Widget> get _pages => [
+        DashboardScreen(),
+        RoomsScreen(),
+        const TaskPage(),
+        MembersScreen(),
+        SettingsScreen(
+          isDarkMode: widget.isDarkMode,
+          onThemeChanged: widget.onThemeChanged,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +119,52 @@ class _DashboardState extends State<Dashboard> {
             label: 'Configurações',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class SettingsScreen extends StatelessWidget {
+  final bool isDarkMode;
+  final Function(bool) onThemeChanged;
+
+  const SettingsScreen({
+    super.key,
+    required this.isDarkMode,
+    required this.onThemeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Configurações'),
+      ),
+      body: Center(
+        child: SwitchListTile(
+          title: const Text('Modo escuro'),
+          subtitle: const Text('Ativar ou desativar o modo escuro'),
+          secondary: Icon(
+            Icons.dark_mode,
+            color: isDarkMode ? Colors.amber : null,
+          ),
+          value: isDarkMode,
+          onChanged: onThemeChanged,
+        ),
+      ),
+    );
+  }
+}
+
+class TaskPage extends StatelessWidget {
+  const TaskPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Página de Tarefas',
+        style: TextStyle(fontSize: 24),
       ),
     );
   }
