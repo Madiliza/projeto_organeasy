@@ -97,7 +97,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     room: task.room,
                     member: task.member,
                     status: selectedStatus!,
-                    color: task.color,
+                    color: task.color, date: task.date,
                   );
 
                   await dbHelper.updateTask(updatedTask);
@@ -222,7 +222,8 @@ class _TasksScreenState extends State<TasksScreen> {
                       room: selectedRoom!,
                       member: '',
                       status: status,
-                      color: selectedColor,
+                      color: selectedColor, 
+                      date: DateTime.now(),
                     );
                     await dbHelper.insertTask(newTask);
                   } else {
@@ -232,7 +233,8 @@ class _TasksScreenState extends State<TasksScreen> {
                       room: selectedRoom!,
                       member: task.member,
                       status: status,
-                      color: selectedColor,
+                      color: selectedColor, 
+                      date: task.date,
                     );
                     await dbHelper.updateTask(updatedTask);
                   }
@@ -320,7 +322,8 @@ class _TasksScreenState extends State<TasksScreen> {
                     room: task.room,
                     member: selectedMember!,
                     status: task.status,
-                    color: member.color,
+                    color: member.color, 
+                    date: task.date,
                   );
 
                   await dbHelper.updateTask(updatedTask);

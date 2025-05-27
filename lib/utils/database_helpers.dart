@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const _databaseName = 'organeasy.db';
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2; // 🔥 Atualize a versão para ativar onUpgrade
 
   static final DatabaseHelper instance = DatabaseHelper._internal();
   factory DatabaseHelper() => instance;
@@ -23,9 +23,11 @@ class DatabaseHelper {
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade, // 🔥 Importante para migração
     );
   }
 
+  // Criação inicial do banco
   Future _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE tasks (
@@ -34,7 +36,8 @@ class DatabaseHelper {
         room TEXT NOT NULL,
         member TEXT NOT NULL,
         status TEXT NOT NULL,
-        color INTEGER NOT NULL
+        color INTEGER NOT NULL,
+        date TEXT NOT NULL
       )
     ''');
 
@@ -55,5 +58,14 @@ class DatabaseHelper {
         name TEXT NOT NULL
       )
     ''');
+  }
+
+  // Migração de versões
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // 🔥 Adiciona coluna 'date' se não existir
+      await db.execute('ALTER TABLE tasks ADD COLUMN date TEXT');
+    }
+    // Se no futuro atualizar para versão 3, adicione outras alterações aqui.
   }
 }

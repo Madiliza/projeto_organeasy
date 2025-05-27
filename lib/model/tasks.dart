@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'dart:ui';
 
 class Task {
   int? id;
@@ -7,6 +7,7 @@ class Task {
   String member;
   String status;
   Color color;
+  DateTime date;
 
   Task({
     this.id,
@@ -15,6 +16,7 @@ class Task {
     required this.member,
     required this.status,
     required this.color,
+    required this.date,
   });
 
   Map<String, dynamic> toMap() {
@@ -25,17 +27,19 @@ class Task {
       'member': member,
       'status': status,
       'color': color.value,
+      'date': date.toIso8601String(),
     };
   }
 
   factory Task.fromMap(Map<String, dynamic> map) {
     return Task(
-      id: map['id'],
-      name: map['name'],
-      room: map['room'],
-      member: map['member'],
-      status: map['status'],
-      color: Color(map['color']),
+      id: map['id'] as int?,
+      name: (map['name'] ?? 'Sem nome') as String,
+      room: (map['room'] ?? 'Sem cômodo') as String,
+      member: (map['member'] ?? '') as String,
+      status: (map['status'] ?? 'Não realizada') as String,
+      color: Color(map['color'] as int),
+      date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
     );
   }
 }

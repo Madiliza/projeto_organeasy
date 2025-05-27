@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:organeasy_app/screens/DashboardScreen.dart';
+import 'package:organeasy_app/screens/TasksScreen.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-// Importação das telas
 import 'screens/DashboardScreen.dart';
 import 'screens/RoomsScreen.dart';
 import 'screens/MembersScreen.dart';
@@ -75,10 +76,10 @@ class _DashboardState extends State<Dashboard> {
   }
 
   List<Widget> get _pages => [
-        DashboardScreen(),
-        RoomsScreen(),
-        const TaskPage(),
-        MembersScreen(),
+        const DashboardScreen(),
+        const RoomsScreen(),
+        const TasksScreen(),
+        const MembersScreen(),
         SettingsScreen(
           isDarkMode: widget.isDarkMode,
           onThemeChanged: widget.onThemeChanged,
