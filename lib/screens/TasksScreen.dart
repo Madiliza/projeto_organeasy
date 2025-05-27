@@ -53,6 +53,66 @@ class _TasksScreenState extends State<TasksScreen> {
     });
   }
 
+  void _changeTaskStatus(Task task) async {
+    final statuses = ['Não realizada', 'Em andamento', 'Concluída'];
+
+    String? selectedStatus = task.status;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Alterar Status'),
+          content: DropdownButtonFormField<String>(
+            value:
+                [
+                  'Não realizada',
+                  'Em andamento',
+                  'Concluída',
+                ].contains(selectedStatus)
+                ? selectedStatus
+                : null,
+            decoration: const InputDecoration(labelText: 'Selecione o status'),
+            items: statuses
+                .map(
+                  (status) =>
+                      DropdownMenuItem(value: status, child: Text(status)),
+                )
+                .toList(),
+            onChanged: (value) {
+              selectedStatus = value;
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (selectedStatus != null) {
+                  final updatedTask = Task(
+                    id: task.id,
+                    name: task.name,
+                    room: task.room,
+                    member: task.member,
+                    status: selectedStatus!,
+                    color: task.color,
+                  );
+
+                  await dbHelper.updateTask(updatedTask);
+                  Navigator.of(context).pop();
+                  _loadTasks();
+                }
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _addOrEditTask({Task? task}) async {
     final nameController = TextEditingController(text: task?.name);
     String? selectedStatus = task?.status ?? 'Não realizada';
@@ -116,7 +176,8 @@ class _TasksScreenState extends State<TasksScreen> {
                               'Não realizada',
                             ].contains(selectedStatus)
                             ? selectedStatus
-                            : 'Não realizada',
+                            : null,
+
                         decoration: const InputDecoration(labelText: 'Status'),
                         items: const [
                           DropdownMenuItem(
@@ -347,23 +408,35 @@ class _TasksScreenState extends State<TasksScreen> {
                               ),
                             ),
                             title: Text(task.name),
-                            subtitle: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: _getStatusColor(task.status),
-                                  radius: 6,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(_getStatusText(task.status)),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    'Cômodo: ${task.room} | Membro: ${task.member.isNotEmpty ? task.member : 'Não atribuído'}',
-                                    overflow: TextOverflow.ellipsis,
+                            subtitle: GestureDetector(
+                              onTap: () => _changeTaskStatus(task),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: _getStatusColor(
+                                      task.status,
+                                    ),
+                                    radius: 6,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _getStatusText(task.status),
+                                    style: const TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      'Cômodo: ${task.room} | Membro: ${task.member.isNotEmpty ? task.member : 'Não atribuído'}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
