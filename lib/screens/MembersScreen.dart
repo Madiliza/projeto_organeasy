@@ -26,9 +26,6 @@ class _MembersScreenState extends State<MembersScreen> {
     });
   }
 
-  Future<int> _getSelectedColor(int id) async {
-    return await dbHelper.getSelectedColor(id);
-  }
 
   void _addOrEditMember({Member? member}) {
     final nameController = TextEditingController(text: member?.name);

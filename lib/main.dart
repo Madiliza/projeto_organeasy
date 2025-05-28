@@ -3,7 +3,6 @@ import 'package:organeasy_app/screens/DashboardScreen.dart';
 import 'package:organeasy_app/screens/TasksScreen.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import 'screens/DashboardScreen.dart';
 import 'screens/RoomsScreen.dart';
 import 'screens/MembersScreen.dart';
 

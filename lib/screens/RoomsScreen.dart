@@ -44,7 +44,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
   void _addOrEditRoom({Room? room}) {
     final nameController = TextEditingController(text: room?.name);
     IconData selectedIcon = room?.icon != null
-        ? IconData(room!.icon!, fontFamily: 'MaterialIcons')
+        ? IconData(room!.icon, fontFamily: 'MaterialIcons')
         : availableIcons.first;
 
     showDialog(
