@@ -54,11 +54,12 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
-      CREATE TABLE rooms (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL
-      )
-    ''');
+    CREATE TABLE rooms (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    icon INTEGER NOT NULL
+  )
+''');
   }
 
   Future<bool> checkColumnExists(Database db, String tableName, String columnName) async {

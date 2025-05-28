@@ -13,6 +13,20 @@ class _RoomsScreenState extends State<RoomsScreen> {
   List<Room> rooms = [];
   final dbHelper = RoomsHelper();
 
+  // Lista de ícones disponíveis
+  final List<IconData> availableIcons = [
+    Icons.home,
+    Icons.bed,
+    Icons.kitchen,
+    Icons.living,
+    Icons.bathtub,
+    Icons.chair,
+    Icons.door_front_door,
+    Icons.lan,
+    Icons.tv,
+    Icons.dining,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -26,53 +40,116 @@ class _RoomsScreenState extends State<RoomsScreen> {
     });
   }
 
+  /// Método para abrir diálogo de adicionar ou editar sala
   void _addOrEditRoom({Room? room}) {
     final nameController = TextEditingController(text: room?.name);
+    IconData selectedIcon = room?.icon != null
+        ? IconData(room!.icon!, fontFamily: 'MaterialIcons')
+        : availableIcons.first;
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(room == null ? 'Adicionar sala' : 'Editar sala'),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          content: TextField(
-            controller: nameController,
-            decoration: const InputDecoration(labelText: 'Nome da sala'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text(room == null ? 'Adicionar sala' : 'Editar sala'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Nome da sala'),
+                    ),
+                    const SizedBox(height: 16),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Escolha um ícone:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: availableIcons.map((icon) {
+                        final isSelected = icon == selectedIcon;
+                        return GestureDetector(
+                          onTap: () {
+                            setStateDialog(() {
+                              selectedIcon = icon;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.blue.shade100
+                                  : Colors.grey.shade200,
+                              border: Border.all(
+                                color: isSelected ? Colors.blue : Colors.grey,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: isSelected ? Colors.blue : Colors.black,
+                              size: 28,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    )
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
 
-                if (name.isEmpty) return;
+                    if (name.isEmpty) return;
 
-                if (room == null) {
-                  final newRoom = Room(name: name);
-                  await dbHelper.insertRoom(newRoom);
-                } else {
-                  final updatedRoom = Room(id: room.id, name: name);
-                  await dbHelper.updateRoom(updatedRoom);
-                }
+                    if (room == null) {
+                      final newRoom = Room(
+                        name: name,
+                        icon: selectedIcon.codePoint,
+                      );
+                      await dbHelper.insertRoom(newRoom);
+                    } else {
+                      final updatedRoom = Room(
+                        id: room.id,
+                        name: name,
+                        icon: selectedIcon.codePoint,
+                      );
+                      await dbHelper.updateRoom(updatedRoom);
+                    }
 
-                Navigator.of(context).pop();
-                _loadRooms();
-              },
-              child: Text(room == null ? 'Adicionar' : 'Salvar'),
-            ),
-          ],
+                    Navigator.of(context).pop();
+                    _loadRooms();
+                  },
+                  child: Text(room == null ? 'Adicionar' : 'Salvar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
+  /// Método para deletar uma sala
   void _deleteRoom(int id) {
     showDialog(
       context: context,
@@ -96,7 +173,10 @@ class _RoomsScreenState extends State<RoomsScreen> {
                 Navigator.of(context).pop();
                 _loadRooms();
               },
-              child: const Text('Deletar', style: TextStyle(color: Colors.red)),
+              child: const Text(
+                'Deletar',
+                style: TextStyle(color: Colors.red),
+              ),
             ),
           ],
         );
@@ -104,6 +184,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
     );
   }
 
+  /// Widget de construção da tela
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,8 +193,10 @@ class _RoomsScreenState extends State<RoomsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Gerenciar Salas',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const Text(
+              'Gerenciar Salas',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerRight,
@@ -138,32 +221,45 @@ class _RoomsScreenState extends State<RoomsScreen> {
                   return Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          const Icon(Icons.home, size: 32, color: Colors.blue),
+                          Icon(
+                            IconData(
+                              room.icon ?? Icons.home.codePoint,
+                              fontFamily: 'MaterialIcons',
+                            ),
+                            size: 32,
+                            color: Colors.blue,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(room.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            child: Text(
+                              room.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
                           ),
                           IconButton(
-                              icon: const Icon(Icons.edit, size: 18),
-                              onPressed: () =>
-                                  _addOrEditRoom(room: room)),
+                            icon: const Icon(Icons.edit, size: 18),
+                            onPressed: () => _addOrEditRoom(room: room),
+                          ),
                           IconButton(
-                              icon: const Icon(Icons.delete, size: 18),
-                              onPressed: () => _deleteRoom(room.id!)),
+                            icon: const Icon(Icons.delete, size: 18),
+                            onPressed: () => _deleteRoom(room.id!),
+                          ),
                         ],
                       ),
                     ),
                   );
                 },
               ),
-            )
+            ),
           ],
         ),
       ),

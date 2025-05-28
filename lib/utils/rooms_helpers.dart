@@ -66,6 +66,7 @@ class RoomsHelper {
   );
 }
 
+
 // 🔥 Atualizar todos os membros
 Future<void> updateAllMembersProgress() async {
   final db = await DatabaseHelper.instance.database;
