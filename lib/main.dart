@@ -76,7 +76,9 @@ class _DashboardState extends State<Dashboard> {
   }
 
   List<Widget> get _pages => [
-        const DashboardScreen(),
+        DashboardScreen(
+          onTabChange: _onItemTapped,
+        ),
         const RoomsScreen(),
         const TasksScreen(),
         const MembersScreen(),

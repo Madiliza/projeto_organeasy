@@ -1,35 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:organeasy_app/model/members.dart';
 import 'package:organeasy_app/model/tasks.dart';
 import 'package:organeasy_app/utils/members_helpers.dart';
 import 'package:organeasy_app/utils/tasks.helpers.dart';
-import 'RoomsScreen.dart';
-import 'TasksScreen.dart';
-import 'MembersScreen.dart';
-
-class Dashboard extends StatefulWidget {
-  const Dashboard({super.key});
-
-  @override
-  State<Dashboard> createState() => _DashboardState();
-}
-
-class _DashboardState extends State<Dashboard> {
-  @override
-  Widget build(BuildContext context) {
-    return const DashboardScreen();
-  }
-}
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  final Function(int) onTabChange;
 
-  // ---------- FILTRAR TAREFAS DA SEMANA ----------
+  const DashboardScreen({super.key, required this.onTabChange});
+
+  // =================== Funções ===================
+
   Future<List<Task>> _getTasksThisWeek() async {
     final tasks = await TasksHelper().getAllTasks();
     final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1)); // Segunda
-    final endOfWeek = startOfWeek.add(const Duration(days: 6)); // Domingo
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
 
     return tasks.where((t) {
       return t.date.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
@@ -37,7 +24,6 @@ class DashboardScreen extends StatelessWidget {
     }).toList();
   }
 
-  // ---------- FILTRAR TAREFAS DE HOJE ----------
   Future<List<Task>> _getTodayTasks() async {
     final tasks = await TasksHelper().getAllTasks();
     final today = DateTime.now();
@@ -48,17 +34,17 @@ class DashboardScreen extends StatelessWidget {
         task.date.day == today.day).toList();
   }
 
+  // =================== Build ===================
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: ListView(
         children: [
+          _buildSectionHeader('Resumo de Hoje'),
           GestureDetector(
-            onTap: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const TasksScreen()));
-            },
+            onTap: () => onTabChange(2), // Vai para a aba de Tarefas
             child: _todayTasksCard(),
           ),
           const SizedBox(height: 16),
@@ -67,7 +53,12 @@ class DashboardScreen extends StatelessWidget {
             children: [
               Expanded(child: _weeklyProgressCard()),
               const SizedBox(width: 16),
-              Expanded(child: _memberActivityCard(context)),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => onTabChange(3), // Vai para a aba de Membros
+                  child: _memberActivityCard(),
+                ),
+              ),
             ],
           ),
         ],
@@ -75,12 +66,26 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // ---------- Cards ----------
+  // =================== UI ===================
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
 
   Widget _buildCard({required String title, required Widget child}) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -88,7 +93,10 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 16),
             child,
@@ -98,69 +106,71 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
- Widget _todayTasksCard() {
-  return FutureBuilder<List<Task>>(
-    future: _getTodayTasks(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return _buildCard(
-          title: "Tarefas do dia",
-          child: const Center(child: CircularProgressIndicator()),
-        );
-      } else if (snapshot.hasError) {
-        return _buildCard(
-          title: "Tarefas do dia",
-          child: const Center(child: Text('Erro ao carregar tarefas')),
-        );
-      } else {
-        final tasks = snapshot.data!;
-        if (tasks.isEmpty) {
+  // =================== Card Tarefas de Hoje ===================
+
+  Widget _todayTasksCard() {
+    return FutureBuilder<List<Task>>(
+      future: _getTodayTasks(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildCard(
             title: "Tarefas do dia",
-            child: const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 50,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Não há tarefas para hoje",
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ],
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          return _buildCard(
+            title: "Tarefas do dia",
+            child: const Center(child: Text('Erro ao carregar tarefas')),
+          );
+        } else {
+          final tasks = snapshot.data!;
+          if (tasks.isEmpty) {
+            return _buildCard(
+              title: "Tarefas do dia",
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle_outline,
+                        size: 50, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text(
+                      "Não há tarefas para hoje",
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
+            );
+          }
+
+          return _buildCard(
+            title: "Tarefas do dia",
+            child: Column(
+              children: tasks.map((task) {
+                return ListTile(
+                  leading: Icon(Icons.task, color: task.color),
+                  title: Text(task.name),
+                  subtitle: Text("Responsável: ${task.memberName}"),
+                  trailing: Icon(
+                    task.status == "Concluído"
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: task.status == "Concluído"
+                        ? Colors.green
+                        : Colors.grey,
+                  ),
+                );
+              }).toList(),
             ),
           );
         }
+      },
+    );
+  }
 
-        return _buildCard(
-          title: "Tarefas do dia",
-          child: Column(
-            children: tasks.map((task) {
-              return ListTile(
-                leading: Icon(Icons.task, color: task.color),
-                title: Text(task.name),
-                subtitle: Text("Responsável: ${task.memberName}"),
-                trailing: Icon(
-                  task.status == "Concluído"
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
-                  color: task.status == "Concluído" ? Colors.green : Colors.grey,
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      }
-    },
-  );
-}
+  // =================== Card Progresso da Semana ===================
 
-  // ---------- Progresso Semanal ----------
   Widget _weeklyProgressCard() {
     return FutureBuilder<List<Task>>(
       future: _getTasksThisWeek(),
@@ -186,10 +196,17 @@ class DashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                LinearProgressIndicator(value: progress, minHeight: 8),
+                LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey.shade300,
+                  color: Colors.green,
+                ),
                 const SizedBox(height: 8),
-                Text("${(progress * 100).toInt()}% Completo",
-                    style: const TextStyle(color: Colors.blue)),
+                Text(
+                  "${(progress * 100).toInt()}% Completo",
+                  style: const TextStyle(color: Colors.green),
+                ),
                 const SizedBox(height: 16),
                 ..._groupTasksByDay(tasks),
               ],
@@ -238,79 +255,92 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // ---------- Membros ----------
-  Widget _memberActivityCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const MembersScreen()));
+  // =================== Card Membros ===================
+
+  Widget _memberActivityCard() {
+    return FutureBuilder<List<Member>>(
+      future: MembersHelper().getMembers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildCard(
+            title: "Membros ativos",
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          return _buildCard(
+            title: "Membros ativos",
+            child: const Center(child: Text('Erro ao carregar membros')),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildCard(
+            title: "Membros ativos",
+            child: const Center(child: Text('Nenhum membro encontrado')),
+          );
+        } else {
+          final members = snapshot.data!;
+          return _buildCard(
+            title: "Membros ativos",
+            child: Column(
+              children: members.map((member) {
+                return _memberProgress(
+                  name: member.name,
+                  progress: member.completion,
+                  color: member.color,
+                );
+              }).toList(),
+            ),
+          );
+        }
       },
-      child: FutureBuilder<List<Member>>(
-        future: MembersHelper().getMembers(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildCard(
-              title: "Membros ativos",
-              child: const Center(child: CircularProgressIndicator()),
-            );
-          } else if (snapshot.hasError) {
-            return _buildCard(
-              title: "Membros ativos",
-              child: const Center(child: Text('Erro ao carregar membros')),
-            );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return _buildCard(
-              title: "Membros ativos",
-              child: const Center(child: Text('Nenhum membro encontrado')),
-            );
-          } else {
-            final members = snapshot.data!;
-            return _buildCard(
-              title: "Membros ativos",
-              child: Column(
-                children: members.map((member) {
-                  return _memberProgress(
-                    member.name,
-                    member.completion,
-                    member.color,
-                  );
-                }).toList(),
-              ),
-            );
-          }
-        },
-      ),
     );
   }
 
-  Widget _memberProgress(String name, double progress, Color color) {
+  Widget _memberProgress({
+    required String name,
+    required double progress,
+    required Color color,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            backgroundColor: color,
-            child: Text(
-              name[0].toUpperCase(),
-              style: const TextStyle(color: Colors.white),
-            ),
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.2),
+                child: Text(
+                  name[0].toUpperCase(),
+                  style: const TextStyle(color: Colors.black),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              Text(
+                "${(progress * 100).toInt()}%",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueGrey,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Text(
-            name,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
+              backgroundColor: Colors.grey.shade300,
               color: color,
-              backgroundColor: color.withOpacity(0.3),
             ),
           ),
-          const SizedBox(width: 8),
-          Text("${(progress * 100).toInt()}%"),
         ],
       ),
     );
