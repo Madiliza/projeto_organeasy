@@ -17,6 +17,11 @@ class Member {
     this.completion = 0.0,
   });
 
+
+
+
+  // 🔸 Converter para Map e de Map para Member
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -38,4 +43,30 @@ class Member {
       completion: (map['completion'] ?? 0.0).toDouble(),
     );
   }
+  Member copyWith({
+    int? id,
+    String? name,
+    String? initial,
+    Color? color,
+    int? assignedTasks,
+    double? completion,
+  }) {
+    return Member(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      initial: initial ?? this.initial,
+      color: color ?? this.color,
+      assignedTasks: assignedTasks ?? this.assignedTasks,
+      completion: completion ?? this.completion,
+    );
+  }
+
+  
+
+@override
+String toString() {
+  return 'Member(id: $id, name: $name, initial: $initial, color: ${color.value}, assignedTasks: $assignedTasks, completion: $completion)';
+}
+
+
 }

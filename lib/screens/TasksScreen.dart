@@ -4,7 +4,7 @@ import 'package:organeasy_app/model/rooms.dart';
 import 'package:organeasy_app/model/tasks.dart';
 import 'package:organeasy_app/utils/members_helpers.dart';
 import 'package:organeasy_app/utils/rooms_helpers.dart';
-import 'package:organeasy_app/utils/tasks.helpers.dart';
+import 'package:organeasy_app/utils/tasks.helpers.dart';// Corrigido nome do helper
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -29,7 +29,11 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Future<void> _loadAllData() async {
-    await Future.wait([_loadTasks(), _loadMembers(), _loadRooms()]);
+    await Future.wait([
+      _loadTasks(),
+      _loadMembers(),
+      _loadRooms(),
+    ]);
   }
 
   Future<void> _loadTasks() async {
@@ -40,7 +44,7 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Future<void> _loadMembers() async {
-    final data = await membersHelper.getAllMembers();
+    final data = await membersHelper.getMembers();
     setState(() {
       members = data;
     });
@@ -53,9 +57,9 @@ class _TasksScreenState extends State<TasksScreen> {
     });
   }
 
-  void _changeTaskStatus(Task task) async {
+  /// Alterar status da tarefa
+  void _changeTaskStatus(Task task) {
     final statuses = ['Não realizada', 'Em andamento', 'Concluída'];
-
     String? selectedStatus = task.status;
 
     showDialog(
@@ -64,7 +68,7 @@ class _TasksScreenState extends State<TasksScreen> {
         return AlertDialog(
           title: const Text('Alterar Status'),
           content: DropdownButtonFormField<String>(
-            value: statuses.contains(selectedStatus) ? selectedStatus : null,
+            value: selectedStatus,
             decoration: const InputDecoration(labelText: 'Selecione o status'),
             items: statuses
                 .map(
@@ -84,16 +88,7 @@ class _TasksScreenState extends State<TasksScreen> {
             TextButton(
               onPressed: () async {
                 if (selectedStatus != null) {
-                  final updatedTask = Task(
-                    id: task.id,
-                    name: task.name,
-                    room: task.room,
-                    member: task.member,
-                    status: selectedStatus!,
-                    color: task.color,
-                    date: task.date,
-                  );
-
+                  final updatedTask = task.copyWith(status: selectedStatus, member: '');
                   await dbHelper.updateTask(updatedTask);
                   Navigator.of(context).pop();
                   _loadTasks();
@@ -107,11 +102,12 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
+  /// Adicionar ou editar tarefa
   void _addOrEditTask({Task? task}) async {
     final nameController = TextEditingController(text: task?.name);
     String? selectedStatus = task?.status ?? 'Não realizada';
     String? selectedRoom = task?.room;
-    Color? selectedColor = task?.color ?? Colors.grey;
+    Color selectedColor = task?.color ?? Colors.grey;
 
     final roomsList = await roomsHelper.getAllRooms();
     final roomsNames = roomsList.map((e) => e.name).toList();
@@ -120,156 +116,114 @@ class _TasksScreenState extends State<TasksScreen> {
       selectedRoom = null;
     }
 
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(task == null ? 'Adicionar Tarefa' : 'Editar Tarefa'),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(task == null ? 'Adicionar Tarefa' : 'Editar Tarefa'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Nome'),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedRoom,
+                      decoration: const InputDecoration(labelText: 'Cômodo'),
+                      items: roomsNames
+                          .map(
+                            (room) => DropdownMenuItem(
+                              value: room,
+                              child: Text(room),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedRoom = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedStatus,
+                      decoration: const InputDecoration(labelText: 'Status'),
+                      items: ['Concluída', 'Em andamento', 'Não realizada']
+                          .map(
+                            (status) => DropdownMenuItem(
+                              value: status,
+                              child: Text(status),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedStatus = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
             ),
-            content: StatefulBuilder(
-              builder: (context, setState) {
-                return SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: nameController,
-                        decoration: const InputDecoration(labelText: 'Nome'),
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: roomsNames.contains(selectedRoom)
-                            ? selectedRoom
-                            : null,
-                        decoration: const InputDecoration(labelText: 'Cômodo'),
-                        items: roomsNames
-                            .map(
-                              (room) => DropdownMenuItem(
-                                value: room,
-                                child: Text(room),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedRoom = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: ['Concluída', 'Em andamento', 'Não realizada']
-                                .contains(selectedStatus)
-                            ? selectedStatus
-                            : null,
-                        decoration: const InputDecoration(labelText: 'Status'),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Concluída',
-                            child: Text('Concluída'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Em andamento',
-                            child: Text('Em andamento'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Não realizada',
-                            child: Text('Não realizada'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            selectedStatus = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                );
+            TextButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                if (name.isEmpty || selectedRoom == null) return;
+
+                if (task == null) {
+                  final newTask = Task(
+                    name: name,
+                    room: selectedRoom!,
+                    member: '',
+                    memberId: 0,
+                    memberName: '',
+                    status: selectedStatus!,
+                    color: selectedColor,
+                    date: DateTime.now(),
+                  );
+                  await dbHelper.insertTask(newTask);
+                } else {
+                  final updatedTask = task.copyWith(
+                    name: name,
+                    room: selectedRoom,
+                    status: selectedStatus!, member: '',
+                  );
+                  await dbHelper.updateTask(updatedTask);
+                }
+
+                Navigator.of(context).pop();
+                _loadTasks();
               },
+              child: Text(task == null ? 'Adicionar' : 'Salvar'),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  final name = nameController.text.trim();
-                  final status = selectedStatus ?? 'Não realizada';
-
-                  if (name.isEmpty || selectedRoom == null) return;
-
-                  if (task == null) {
-                    final newTask = Task(
-                      name: name,
-                      room: selectedRoom!,
-                      member: '',
-                      status: status,
-                      color: selectedColor,
-                      date: DateTime.now(),
-                    );
-                    await dbHelper.insertTask(newTask);
-                  } else {
-                    final updatedTask = Task(
-                      id: task.id,
-                      name: name,
-                      room: selectedRoom!,
-                      member: task.member,
-                      status: status,
-                      color: selectedColor,
-                      date: task.date,
-                    );
-                    await dbHelper.updateTask(updatedTask);
-                  }
-
-                  Navigator.of(context).pop();
-                  _loadTasks();
-                },
-                child: Text(task == null ? 'Adicionar' : 'Salvar'),
-              ),
-            ],
-          );
-        },
-      );
-    }
+          ],
+        );
+      },
+    );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Concluída':
-        return Colors.green;
-      case 'Em andamento':
-        return Colors.yellow;
-      case 'Não realizada':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'Concluída':
-        return 'Concluída';
-      case 'Em andamento':
-        return 'Em andamento';
-      case 'Não realizada':
-        return 'Não realizada';
-      default:
-        return 'Status desconhecido';
-    }
-  }
-
+  /// Atribuir membro à tarefa
   void _assignMemberToTask(Task task) async {
-    final membersList = await membersHelper.getAllMembers();
+    final membersList = await membersHelper.getMembers();
     final membersNames = membersList.map((e) => e.name).toList();
-    String? selectedMember = membersNames.contains(task.member)
-        ? task.member
-        : null;
+    String? selectedMember = task.memberName.isNotEmpty ? task.memberName : null;
 
     showDialog(
       context: context,
@@ -299,18 +253,13 @@ class _TasksScreenState extends State<TasksScreen> {
                 if (selectedMember != null) {
                   final member = membersList.firstWhere(
                     (m) => m.name == selectedMember,
-                    orElse: () =>
-                        Member(name: '', initial: '', color: Colors.grey),
                   );
 
-                  final updatedTask = Task(
-                    id: task.id,
-                    name: task.name,
-                    room: task.room,
+                  final updatedTask = task.copyWith(
                     member: selectedMember!,
-                    status: task.status,
+                    memberId: member.id,
+                    memberName: member.name,
                     color: member.color,
-                    date: task.date,
                   );
 
                   await dbHelper.updateTask(updatedTask);
@@ -326,15 +275,13 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
+  /// Deletar tarefa
   void _deleteTask(int id) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Deletar Tarefa'),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
           content: const Text('Quer mesmo deletar esta tarefa?'),
           actions: [
             TextButton(
@@ -343,7 +290,10 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
             TextButton(
               onPressed: () async {
-                await dbHelper.deleteTask(id);
+                // Find the task by id to get the name or other required value
+                final task = tasks.firstWhere((t) => t.id == id);
+                await dbHelper.deleteTask(id, task.memberId);
+                // Atualizar o progresso do membro após deletar a tarefa  
                 Navigator.of(context).pop();
                 _loadTasks();
               },
@@ -355,9 +305,10 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
+  /// Progresso
   double _getMemberCompletedPercentage(String memberName) {
     final memberTasks =
-        tasks.where((task) => task.member == memberName).toList();
+        tasks.where((task) => task.memberName == memberName).toList();
     if (memberTasks.isEmpty) return 0;
     final completedTasks =
         memberTasks.where((task) => task.status == 'Concluída').length;
@@ -368,6 +319,32 @@ class _TasksScreenState extends State<TasksScreen> {
     if (tasks.isEmpty) return 0;
     final completed = tasks.where((t) => t.status == 'Concluída').length;
     return completed / tasks.length;
+  }
+
+  /// Cores do status
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Concluída':
+        return Colors.green;
+      case 'Em andamento':
+        return Colors.yellow;
+      case 'Não realizada':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Texto do status
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'Concluída':
+      case 'Em andamento':
+      case 'Não realizada':
+        return status;
+      default:
+        return 'Status desconhecido';
+    }
   }
 
   @override
@@ -475,9 +452,8 @@ class _TasksScreenState extends State<TasksScreen> {
                               child: Row(
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: _getStatusColor(
-                                      task.status,
-                                    ),
+                                    backgroundColor:
+                                        _getStatusColor(task.status),
                                     radius: 6,
                                   ),
                                   const SizedBox(width: 8),
@@ -491,7 +467,7 @@ class _TasksScreenState extends State<TasksScreen> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Text(
-                                      'Cômodo: ${task.room} | Membro: ${task.member.isNotEmpty ? task.member : 'Não atribuído'}',
+                                      'Cômodo: ${task.room} | Membro: ${task.memberName.isNotEmpty ? task.memberName : 'Não atribuído'}',
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -503,7 +479,8 @@ class _TasksScreenState extends State<TasksScreen> {
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.person_add),
-                                  onPressed: () => _assignMemberToTask(task),
+                                  onPressed: () =>
+                                      _assignMemberToTask(task),
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.edit),

@@ -98,68 +98,67 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // ---------- Tarefas de Hoje ----------
-  Widget _todayTasksCard() {
-    return FutureBuilder<List<Task>>(
-      future: _getTodayTasks(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+ Widget _todayTasksCard() {
+  return FutureBuilder<List<Task>>(
+    future: _getTodayTasks(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return _buildCard(
+          title: "Tarefas do dia",
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      } else if (snapshot.hasError) {
+        return _buildCard(
+          title: "Tarefas do dia",
+          child: const Center(child: Text('Erro ao carregar tarefas')),
+        );
+      } else {
+        final tasks = snapshot.data!;
+        if (tasks.isEmpty) {
           return _buildCard(
             title: "Tarefas do dia",
-            child: const Center(child: CircularProgressIndicator()),
-          );
-        } else if (snapshot.hasError) {
-          return _buildCard(
-            title: "Tarefas do dia",
-            child: const Center(child: Text('Erro ao carregar tarefas')),
-          );
-        } else {
-          final tasks = snapshot.data!;
-          if (tasks.isEmpty) {
-            return _buildCard(
-              title: "Tarefas do dia",
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "Não há tarefas para hoje",
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return _buildCard(
-            title: "Tarefas do dia",
-            child: Column(
-              children: tasks.map((task) {
-                return ListTile(
-                  leading: Icon(Icons.task, color: task.color),
-                  title: Text(task.name),
-                  subtitle: Text("Responsável: ${task.member}"),
-                  trailing: Icon(
-                    task.status == "Concluído"
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    color: task.status == "Concluído" ? Colors.green : Colors.grey,
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 50,
+                    color: Colors.grey,
                   ),
-                );
-              }).toList(),
+                  SizedBox(height: 8),
+                  Text(
+                    "Não há tarefas para hoje",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
             ),
           );
         }
-      },
-    );
-  }
+
+        return _buildCard(
+          title: "Tarefas do dia",
+          child: Column(
+            children: tasks.map((task) {
+              return ListTile(
+                leading: Icon(Icons.task, color: task.color),
+                title: Text(task.name),
+                subtitle: Text("Responsável: ${task.memberName}"),
+                trailing: Icon(
+                  task.status == "Concluído"
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  color: task.status == "Concluído" ? Colors.green : Colors.grey,
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      }
+    },
+  );
+}
 
   // ---------- Progresso Semanal ----------
   Widget _weeklyProgressCard() {
@@ -224,7 +223,7 @@ class DashboardScreen extends StatelessWidget {
       "Sexta-feira",
       "Sábado"
     ];
-    return days[date.weekday % 7];
+    return days[date.weekday == 7 ? 0 : date.weekday];
   }
 
   Widget _dayTask(String day, int tasks) {
@@ -247,7 +246,7 @@ class DashboardScreen extends StatelessWidget {
             MaterialPageRoute(builder: (context) => const MembersScreen()));
       },
       child: FutureBuilder<List<Member>>(
-        future: MembersHelper().getAllMembers(),
+        future: MembersHelper().getMembers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildCard(

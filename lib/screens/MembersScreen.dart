@@ -238,13 +238,6 @@ class _MembersScreenState extends State<MembersScreen> {
                                     style: const TextStyle(
                                         color: Colors.grey, fontSize: 12),
                                   ),
-                                  Text(
-                                    'Concluído: ${(member.completion * 100).toInt()}%',
-                                    style: const TextStyle(
-                                        color: Colors.green,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500),
-                                  ),
                                 ],
                               ),
                               const Spacer(),
